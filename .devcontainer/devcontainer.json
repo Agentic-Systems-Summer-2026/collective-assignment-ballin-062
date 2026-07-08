@@ -1,0 +1,57 @@
+{
+  // OpenClaw Codespace — auto-installs OpenClaw and points it at the first
+  // working endpoint: OU LiteLLM Sandbox (if you have a key), else OpenRouter.
+  // See scripts/preflight.sh + scripts/configure.sh. Comments are allowed here.
+  "name": "Agentic Systems Course (OU LiteLLM + OpenRouter)",
+
+  // Node 22 LTS base (OpenClaw supports Node 22.14+; 24 is the upstream default).
+  // The installer will bump Node only if the base is too old.
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22-bookworm",
+
+  // Codespaces PROMPTS for these secrets at creation time if they aren't already
+  // saved in the user's account/repo secrets. They are injected as env vars.
+  "secrets": {
+    "LITELLM_API_KEY": {
+      "description": "FIRST CHOICE. Your OU LiteLLM Sandbox key (starts with sk-), issued by the course. If you have one, set it \u2014 the Codespace uses it automatically. Leave blank if you weren't issued one.",
+      "documentationUrl": "https://docs.openclaw.ai/providers/litellm"
+    },
+    "OPENROUTER_API_KEY": {
+      "description": "Also works (used when no OU LiteLLM key is set). Your OWN OpenRouter API key (starts with sk-or-). Create the account + key at https://openrouter.ai (Settings \u2192 Keys), load ~$10 of credit, and set a credit limit on the key. Expect at most ~$10 of usage for the term.",
+      "documentationUrl": "https://docs.openclaw.ai/providers/openrouter"
+    }
+  },
+
+  // OpenClaw Gateway + Control UI listen on 18789.
+  "forwardPorts": [18789],
+  "portsAttributes": {
+    "18789": {
+      "label": "OpenClaw Control UI",
+      "onAutoForward": "notify"
+    }
+  },
+
+  // Runs once after the container is built: installs OpenClaw and writes config.
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  // Runs on EVERY container start: makes sure the gateway is running even if
+  // VS Code's automatic tasks are blocked (folderOpen tasks sit behind a
+  // security gate, and some VS Code releases have blocked them outright).
+  // Idempotent and fully detached — never blocks startup. The "OpenClaw:
+  // Gateway" task detects the background gateway and tails its log instead
+  // of double-starting.
+  "postStartCommand": "bash scripts/gateway-daemon.sh",
+
+  "customizations": {
+    "vscode": {
+      // Machine-scoped settings applied inside the Codespace. This is the
+      // supported place to allow folderOpen tasks — the same setting in
+      // .vscode/settings.json (workspace scope) is IGNORED by VS Code for
+      // security (a repo can't self-approve its own automatic tasks).
+      "settings": {
+        "task.allowAutomaticTasks": "on"
+      }
+    }
+  },
+
+  "remoteUser": "node"
+}

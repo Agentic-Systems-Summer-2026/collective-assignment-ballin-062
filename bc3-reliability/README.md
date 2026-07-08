@@ -1,0 +1,33 @@
+# Build Challenge 3 — Reliability & Rollback (50 pts, due Tue Jul 21, 11:59 PM CT)
+
+**Objective.** Start from the provided broken-agent skeleton: diagnose its
+failure modes, then add retries, timeouts, fallbacks, and a harness with a
+rollback path. Your agent must checkpoint to disk and **survive a Codespace
+stop/restart mid-task** — demonstrate recovery from that interruption and
+from at least one injected failure.
+
+**Starter state.** `broken_agent.py` processes `requests.jsonl` and usually
+"succeeds" — while hiding at least six reliability flaws (the docstring lists
+the categories; find them in the code).
+
+**Protocol.**
+1. **Diagnose before fixing.** List every flaw you find and the bad day that
+   triggers it (network blip, chatty model reply, crash mid-run, restart…).
+2. Build `fixed_agent.py`: timeouts + retries with backoff, JSON validation
+   with a fallback path, staged output with rollback (never destroy the last
+   good report), and a checkpoint file so a restart resumes where it left off
+   without re-spending tokens.
+3. **Demonstrate recovery twice:** (a) kill/stop the Codespace mid-run and
+   show it resumes correctly; (b) inject one failure (e.g., point BASE at a
+   bad URL for a few items, or corrupt a model reply) and show the harness
+   handles it and the report stays valid.
+
+**Acceptance check.** Both recovery demos captured in the write-up — an
+**asciinema recording is the preferred evidence** (`asciinema rec
+bc3-recovery.cast`, commit the .cast file; trace excerpts or screenshots
+also accepted) — report never left corrupt/half-written, and re-running
+after success is idempotent.
+
+**Rubric (50 pts).** Diagnosis completeness (15) · fixes: retries/timeouts/
+validation/fallback (15) · checkpoint + rollback with demonstrated recovery
+(15) · Build Journal entry (5).
