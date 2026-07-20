@@ -13,14 +13,29 @@ set -euo pipefail
 # Default OpenRouter model slug (cheap open model for routine agent loops).
 # Verify the current slug at https://openrouter.ai/models before the term.
 OPENCLAW_MODEL="${OPENCLAW_MODEL:-qwen/qwen3-coder}"
-# Optional comma-separated fallback (secondary) model slugs (same provider).
-OPENCLAW_MODEL_FALLBACKS="${OPENCLAW_MODEL_FALLBACKS:-}"
 # OU LiteLLM Sandbox endpoint (first choice when you have a key).
 LITELLM_BASE_URL="${LITELLM_BASE_URL:-https://litellm.lib.ou.edu}"
-# NOTE: the id must match what the gateway reports at /v1/models — for
-# this model that's the literal string "Qwen3 Coder 30B", spaces included.
-LITELLM_MODEL="${LITELLM_MODEL:-Qwen3 Coder 30B}"
-LITELLM_MODEL_NAME="${LITELLM_MODEL_NAME:-Qwen3 Coder 30B (OU LiteLLM)}"
+# NOTE: ids must match what the gateway reports at /v1/models — for these
+# models that's the literal strings below, spaces included.
+#
+# Course default is a large model on purpose. Small coder models cannot
+# reliably run a multi-step tool-using task: instead of failing they tend to
+# fabricate a result and report success. Qwen3 Coder 30B did exactly that on
+# the Ship Day assignment — invented search results, skipped the deploy, and
+# announced "Website Successfully Built!". It is kept only as a fallback for
+# when the primary is unavailable.
+LITELLM_MODEL="${LITELLM_MODEL:-Claude Sonnet 4.6}"
+LITELLM_MODEL_NAME="${LITELLM_MODEL_NAME:-Claude Sonnet 4.6 (OU LiteLLM)}"
+# Optional comma-separated fallback model ids, PER PROVIDER. Fallbacks are
+# prefixed with the active provider, so a single shared list would produce
+# nonsense like "openrouter/Qwen3 Coder 30B" for an OpenRouter student.
+# Note the "-" rather than ":-": setting these to an empty string explicitly
+# means "no fallback", while leaving them unset takes the course default.
+LITELLM_MODEL_FALLBACKS="${LITELLM_MODEL_FALLBACKS-Qwen3 Coder 30B}"
+OPENROUTER_MODEL_FALLBACKS="${OPENROUTER_MODEL_FALLBACKS-}"
+# Legacy single-list override. If set, it wins for whichever provider is
+# active — kept so existing env-var overrides keep working.
+OPENCLAW_MODEL_FALLBACKS="${OPENCLAW_MODEL_FALLBACKS:-}"
 # -----------------------------------------------------------------
 
 STATE_DIR="${HOME}/.openclaw"
@@ -78,32 +93,86 @@ if [[ -z "${PROVIDER}" ]]; then
   if [[ "${LL_KEY}" != "${LL_PLACEHOLDER}" ]]; then PROVIDER="litellm"; else PROVIDER="openrouter"; fi
 fi
 
-# Build the model block: chosen provider's primary + optional fallbacks.
+# Build the model block: chosen provider's primary + that provider's fallbacks.
 if [[ "${PROVIDER}" == "litellm" ]]; then
   PRIMARY_SLUG="litellm/${LITELLM_MODEL}"
+  FALLBACK_LIST="${LITELLM_MODEL_FALLBACKS}"
 else
   PRIMARY_SLUG="openrouter/${OPENCLAW_MODEL}"
+  FALLBACK_LIST="${OPENROUTER_MODEL_FALLBACKS}"
 fi
+# Legacy override wins if someone set it explicitly.
+[[ -n "${OPENCLAW_MODEL_FALLBACKS}" ]] && FALLBACK_LIST="${OPENCLAW_MODEL_FALLBACKS}"
+
 MODEL_BLOCK="{ primary: \"${PRIMARY_SLUG}\""
-if [[ -n "${OPENCLAW_MODEL_FALLBACKS}" ]]; then
-  fb=""
-  IFS=',' read -ra _fbs <<< "${OPENCLAW_MODEL_FALLBACKS}"
+FALLBACK_DESC="none"
+if [[ -n "${FALLBACK_LIST}" ]]; then
+  fb=""; fb_desc=""
+  IFS=',' read -ra _fbs <<< "${FALLBACK_LIST}"
   for f in "${_fbs[@]}"; do
-    f="${f// /}"; [[ -z "${f}" ]] && continue
+    # Trim surrounding whitespace only — these ids contain spaces.
+    f="${f#"${f%%[![:space:]]*}"}"; f="${f%"${f##*[![:space:]]}"}"
+    [[ -z "${f}" ]] && continue
+    # A fallback identical to the primary can never help.
+    [[ "${PROVIDER}/${f}" == "${PRIMARY_SLUG}" ]] && continue
     fb="${fb:+${fb}, }\"${PROVIDER}/${f}\""
+    fb_desc="${fb_desc:+${fb_desc}, }${PROVIDER}/${f}"
   done
-  [[ -n "${fb}" ]] && MODEL_BLOCK="${MODEL_BLOCK}, fallbacks: [${fb}]"
+  if [[ -n "${fb}" ]]; then
+    MODEL_BLOCK="${MODEL_BLOCK}, fallbacks: [${fb}]"
+    FALLBACK_DESC="${fb_desc}"
+  fi
 fi
 MODEL_BLOCK="${MODEL_BLOCK} }"
 
-# Render the config from the template.
+# Declare every LiteLLM model the config can reference. The gateway resolves
+# agents.defaults.model against this list, so a fallback that is not declared
+# here simply will not work. Declared regardless of the active provider, so
+# scripts/select-model.sh can switch to any of them without a re-render.
+LITELLM_DECLARED="${LITELLM_MODEL}"
+if [[ -n "${LITELLM_MODEL_FALLBACKS}" ]]; then
+  IFS=',' read -ra _decl <<< "${LITELLM_MODEL_FALLBACKS}"
+  for f in "${_decl[@]}"; do
+    f="${f#"${f%%[![:space:]]*}"}"; f="${f%"${f##*[![:space:]]}"}"
+    [[ -z "${f}" || "${f}" == "${LITELLM_MODEL}" ]] && continue
+    LITELLM_DECLARED="${LITELLM_DECLARED},${f}"
+  done
+fi
+LITELLM_MODELS_JSON=""
+IFS=',' read -ra _mids <<< "${LITELLM_DECLARED}"
+for mid in "${_mids[@]}"; do
+  [[ -z "${mid}" ]] && continue
+  if [[ "${mid}" == "${LITELLM_MODEL}" ]]; then mname="${LITELLM_MODEL_NAME}"; else mname="${mid} (OU LiteLLM)"; fi
+  LITELLM_MODELS_JSON="${LITELLM_MODELS_JSON}          {
+            id: \"${mid}\",
+            name: \"${mname}\",
+            // Adjust these to match the real model if needed.
+            reasoning: false,
+            input: [\"text\"],
+            contextWindow: ${LITELLM_CONTEXT_WINDOW:-128000},
+            maxTokens: ${LITELLM_MAX_TOKENS:-8192},
+          },
+"
+done
+
+# Render the config from the template. The models array is multi-line, so it
+# goes in via a file read rather than a sed replacement string.
+MODELS_TMP="$(mktemp)"
+printf '%s' "${LITELLM_MODELS_JSON}" > "${MODELS_TMP}"
 sed -e "s#@@BASE_URL@@#${LITELLM_BASE_URL}#g" \
     -e "s#@@MODEL_ID@@#${LITELLM_MODEL}#g" \
     -e "s#@@MODEL_NAME@@#${LITELLM_MODEL_NAME}#g" \
+    -e "/@@LITELLM_MODELS@@/{r ${MODELS_TMP}
+d
+}" \
     -e "s#@@MODEL_BLOCK@@#${MODEL_BLOCK}#g" \
     "${TEMPLATE}" > "${CONFIG_FILE}"
+rm -f "${MODELS_TMP}"
 
-echo "Wrote ${CONFIG_FILE} (default model: ${PRIMARY_SLUG}; LiteLLM gateway: ${LITELLM_BASE_URL})"
+echo "Wrote ${CONFIG_FILE}"
+echo "  primary:   ${PRIMARY_SLUG}"
+echo "  fallbacks: ${FALLBACK_DESC}"
+echo "  LiteLLM gateway: ${LITELLM_BASE_URL}"
 
 if [[ "${OR_KEY}" == "${OR_PLACEHOLDER}" && "${LL_KEY}" == "${LL_PLACEHOLDER}" ]]; then
   echo "!! No endpoint key found — wrote placeholders."
