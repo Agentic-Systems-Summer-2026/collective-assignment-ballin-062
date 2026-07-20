@@ -47,6 +47,7 @@ Build Journal, and a CI eval gate. By August 7 this repo *is* your portfolio.
 | `common/llm.py` | Shared OpenRouter client (stdlib): `chat()`, `STATS` (cost tracking), `cache=True`, `load_prompt()` |
 | `prompts/` + `PROMPTS.md` | Prompts as files + the required changelog. Prompts are software artifacts. |
 | `JOURNAL.md` | Your Build Journal (graded, cumulative, also your AI-use disclosure record) |
+| `shipday/` | Ship Day: `check.py` acceptance checker and `.env.example` for the Tavily + Netlify build |
 | `.github/workflows/eval.yml` | CI regression gate — runs your BC4 eval harness on every push |
 | `.devcontainer/`, `scripts/`, `.vscode/` | Codespace machinery (OpenClaw + OpenRouter) — you shouldn't need to touch these |
 
@@ -99,9 +100,39 @@ labs, agent state), `tmux` (keep long-running agents alive — BC3),
 
 ## Model notes
 
-Default model: `Qwen3 Coder 30B` on the OU LiteLLM Sandbox, or
-`qwen/qwen3-coder` on OpenRouter — the Codespace picks the endpoint from
-your key(s) at startup (LiteLLM first). Route individual calls to cheaper
-models with `chat(..., model=...)` — you'll use that in the Day 9 cost lab.
-Switch the TUI's model any time with `scripts/select-model.sh` or
-`Ctrl/Cmd+Alt+M`.
+Default: **`Claude Sonnet 4.6` on the OU LiteLLM Sandbox**, with
+`Qwen3 Coder 30B` as an automatic fallback if the primary is unavailable. On
+OpenRouter the default is `qwen/qwen3-coder`. The Codespace picks the endpoint
+from your key(s) at startup (LiteLLM first).
+
+**Why a large model by default.** Most of what you build this term is
+multi-step tool use: call a tool, read the result, decide what to do next,
+recover when something fails. Small coder models are not reliable at that, and
+the way they fail is the problem — instead of stopping with an error, they tend
+to invent a plausible result and report success. On the Ship Day assignment,
+`Qwen3 Coder 30B` claimed it had no network access (it did), silently replaced
+a real web search with five fabricated results, never deployed anything, and
+finished with "Website Successfully Built!" above a list of green checkmarks
+for work it had not done.
+
+That is worth knowing for its own sake — it is the failure mode Day 13
+(observability) and Day 14 (human oversight) are about. It is also why the
+fallback matters: **if your agent starts inventing things or claiming it cannot
+reach the network, check which model is actually answering.** You may have
+failed over. The active model is shown in the TUI status bar.
+
+**Switching models.** Run `scripts/select-model.sh` (or `Ctrl/Cmd+Alt+M`). It
+asks which provider you want for your primary, shows that catalog, then asks
+the same for your fallback, which you can decline. Primary and fallback may
+come from different providers. To set one directly:
+
+```bash
+openclaw models set "litellm/Claude Sonnet 4.6"
+openclaw models status
+```
+
+The quotes matter — these model ids contain spaces. Changes apply to new
+sessions; inside a chat you are already in, switch with `/model`.
+
+**Per-call routing.** Send individual calls to cheaper models with
+`chat(..., model=...)` — you'll use that in the Day 9 cost lab.
