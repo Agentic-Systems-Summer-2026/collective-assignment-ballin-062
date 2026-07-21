@@ -1,6 +1,6 @@
 # Agentic Systems Course Repo — SDI 4243/5243 (OU)
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Agentic-Systems-Summer-2026/agentic-systems-course)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Agentic-Systems-Summer-2026/collective-assignment-ballin-062)
 
 > **⚠️ Two cautions.** (1) This button opens the Codespace **creation page with options** — enter your API key(s) in the "Recommended secrets" fields there *before* clicking Create. (2) In a brand-new student repo this badge still points at the course template until your first Codespace setup re-points it — so for your **first** launch, use the steps below instead of the badge.
 

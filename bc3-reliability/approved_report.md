@@ -3,15 +3,9 @@
 - **CR-104** (low): Bump the Python base image from 3.11.8 to 3.11.9 in the agent container. — Minor patch version update with no breaking changes or new dependencies
 - **CR-108** (low): Increase the request timeout on the LLM gateway from 60s to 120s for long comple — Simple timeout adjustment that only increases wait time, no functional changes or potential for breaking existing behavior.
 
-## Skipped (checkpoint)
-- CR-101
-- CR-102
-- CR-103
-- CR-104
-- CR-105
-- CR-106
-- CR-107
-- CR-108
+## Failed Items
+- **CR-103**: [injected failure] CR-103 forced to error
+- **CR-105**: [injected failure] CR-105 forced to error
 
 ---
-_Generated 2026-07-21 06:50:31 UTC_
+_Generated 2026-07-21 06:59:00 UTC_
