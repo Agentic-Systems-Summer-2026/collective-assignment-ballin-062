@@ -29,6 +29,9 @@ import re
 import sys
 import time
 
+# --slow flag: adds a 2s pause between items so mid-run kill is demonstrable
+SLOW = "--slow" in sys.argv
+
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from common.llm import chat, load_prompt  # noqa
 
@@ -159,6 +162,8 @@ def main():
             verdict = classify(item["request"], iid)
             checkpoint[iid] = verdict
             save_checkpoint(checkpoint)
+            if SLOW:
+                time.sleep(2)
             if verdict["risk"] == "low":
                 approved.append((item, verdict))
                 print(f" {verdict['risk']} ✓")
