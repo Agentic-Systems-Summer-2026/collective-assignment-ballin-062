@@ -1,0 +1,34 @@
+{
+  "CR-101": {
+    "risk": "medium",
+    "reason": "Access credentials rotation with potential deployment pipeline impact"
+  },
+  "CR-102": {
+    "risk": "low",
+    "reason": "Adding an index is a standard database optimization that improves query performance with minimal risk of breaking existing functionality."
+  },
+  "CR-103": {
+    "risk": "high",
+    "reason": "Granting write access to production database to interns poses severe security and data integrity risks."
+  },
+  "CR-104": {
+    "risk": "low",
+    "reason": "Minor patch version update with no breaking changes or new dependencies"
+  },
+  "CR-105": {
+    "risk": "high",
+    "reason": "Disabling audit logging compromises security monitoring and compliance requirements for an extended period."
+  },
+  "CR-106": {
+    "risk": "medium",
+    "reason": "Adds resilience but could introduce latency spikes and complexity in error handling if not properly implemented."
+  },
+  "CR-107": {
+    "risk": "high",
+    "reason": "Self-approval of code changes bypasses review process and poses security and quality control risks."
+  },
+  "CR-108": {
+    "risk": "low",
+    "reason": "Simple timeout adjustment that only increases wait time, no functional changes or potential for breaking existing behavior."
+  }
+}

@@ -1,0 +1,7 @@
+Classify the following change request by risk level.
+
+Reply ONLY with a JSON object — no markdown fences, no explanation, no preamble.
+The exact format required:
+{"risk": "low|medium|high", "reason": "<one line, under 120 chars>"}
+
+Change request:
