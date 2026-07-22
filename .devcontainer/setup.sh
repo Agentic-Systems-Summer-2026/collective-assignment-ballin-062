@@ -67,9 +67,9 @@ else
   echo "PATH block already present — nothing to do."
 fi
 
-step "Install 3/4 — Python tooling (pytest for the BC4 eval gate; flask for demo UIs)"
+step "Install 3/4 — Python tooling (pytest for BC4's eval gate; flask for demo UIs; tavily-python for Ship Day search)"
 (python3 -m pip --version >/dev/null 2>&1 || sudo apt-get update -qq && sudo apt-get install -y -qq python3-pip) || true
-python3 -m pip install --user -q pytest flask 2>/dev/null || python3 -m pip install --user -q --break-system-packages pytest flask || true
+python3 -m pip install --user -q pytest flask tavily-python 2>/dev/null || python3 -m pip install --user -q --break-system-packages pytest flask tavily-python || true
 echo "pytest: $(python3 -m pytest --version 2>/dev/null | head -1 || echo 'install failed — run: python3 -m pip install --user pytest')"
 
 step "Install 4/4 — Course toolbelt (tunnels, JSON, recording, and friends)"
@@ -80,9 +80,10 @@ step "Install 4/4 — Course toolbelt (tunnels, JSON, recording, and friends)"
 #   ripgrep   - fast search through logs and traces
 #   httpie    - friendly HTTP client for poking APIs
 #   asciinema - terminal recordings, an official demo-evidence format
+#   netcat    - simulate hanging/unreachable endpoints in reliability tests (BC3)
 #   tree/htop/entr - orientation, resource view, auto-rerun on change
 sudo apt-get update -qq || true
-sudo apt-get install -y -qq jq sqlite3 tmux ripgrep httpie asciinema tree htop entr 2>/dev/null || true
+sudo apt-get install -y -qq jq sqlite3 tmux ripgrep httpie asciinema netcat-openbsd tree htop entr 2>/dev/null || true
 
 # cloudflared — quick tunnels to share your demo (Day 15, capstone):
 #   cloudflared tunnel --url http://localhost:5000
@@ -90,6 +91,13 @@ if ! command -v cloudflared >/dev/null 2>&1; then
   curl -fsSL -o /tmp/cloudflared.deb \
     https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb \
     && sudo dpkg -i /tmp/cloudflared.deb >/dev/null 2>&1 && rm -f /tmp/cloudflared.deb || true
+fi
+
+# Netlify CLI — deploy your Ship Day site and capstone demos from the terminal
+# (netlify sites:create, netlify deploy). Prebuilt so the ~2-minute npm install
+# isn't paid at the deadline.
+if ! command -v netlify >/dev/null 2>&1; then
+  npm install -g netlify-cli >/dev/null 2>&1 || true
 fi
 
 # GitHub CLI — check your Actions eval runs from the terminal (gh run list):
@@ -102,8 +110,8 @@ if ! command -v gh >/dev/null 2>&1; then
    && sudo apt-get update -qq && sudo apt-get install -y -qq gh) 2>/dev/null || true
 fi
 
-echo "toolbelt: $(for t in jq sqlite3 tmux rg http asciinema tree htop entr cloudflared gh; do command -v $t >/dev/null && printf '%s ' $t; done)"
-echo "missing:  $(for t in jq sqlite3 tmux rg http asciinema tree htop entr cloudflared gh; do command -v $t >/dev/null || printf '%s ' $t; done)"
+echo "toolbelt: $(for t in jq sqlite3 tmux rg http asciinema nc tree htop entr cloudflared gh netlify; do command -v $t >/dev/null && printf '%s ' $t; done)"
+echo "missing:  $(for t in jq sqlite3 tmux rg http asciinema nc tree htop entr cloudflared gh netlify; do command -v $t >/dev/null || printf '%s ' $t; done)"
 
 fi  # end install phase
 
