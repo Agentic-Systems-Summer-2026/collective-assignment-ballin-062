@@ -8,14 +8,16 @@
     "reason": "Adding an index is a standard database optimization that improves query performance with minimal risk of breaking existing functionality."
   },
   "CR-103": {
-    "error": "[injected failure] CR-103 forced to error"
+    "risk": "high",
+    "reason": "Granting write access to production database to interns poses severe security and data integrity risks."
   },
   "CR-104": {
     "risk": "low",
     "reason": "Minor patch version update with no breaking changes or new dependencies"
   },
   "CR-105": {
-    "error": "[injected failure] CR-105 forced to error"
+    "risk": "high",
+    "reason": "Disabling audit logging compromises security monitoring and compliance requirements for an extended period."
   },
   "CR-106": {
     "risk": "medium",
