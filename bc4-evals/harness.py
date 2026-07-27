@@ -25,7 +25,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 CASES = HERE / "cases.jsonl"
 PROMPT_FILE = pathlib.Path(__file__).resolve().parents[1] / "prompts" / "ad_analysis.txt"
 
-PASS_THRESHOLD = 0.80   # CI gate fails below this — tuned from calibration run
+PASS_THRESHOLD = 0.99   # CI gate fails below this — tuned from calibration run
 JUDGE_MODEL = "Claude Sonnet 4.6"   # Sonnet-class required for judge layer
 
 
