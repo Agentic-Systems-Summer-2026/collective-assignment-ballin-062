@@ -172,3 +172,11 @@ Test refusal cases in isolation before integrating — they expose prompt instru
 Use shortest unambiguous substrings in must_contain rather than full phrases that vary in form across model outputs.
 Validate prompt file loading explicitly at startup rather than relying on silent fallback behavior.
 Replace fixture data with actual GOAD output once the lab is provisioned — ground-truth data produces more meaningful eval results than synthesized fixtures.
+
+## BC5-Observability 
+
+BC5 crystallized something important about observability design that connects directly to my capstone: the trace is only as good as your failure coverage. A trace that stops at the first exception tells you that something failed but not what — exactly the situation quiet_agent.py was designed to demonstrate. Adding failure events to every step before re-raising is the agentic equivalent of structured exception logging in traditional software — you need the context at the point of failure, not just the traceback. In a way, it's important to capture the 'state' of the machine as well as execution details. Eric Brandywine discusses how Amazon Security Engineers prefer this over traditional HITL approach (LINK: https://www.theregister.com/security/2026/06/20/why-amazon-hates-human-in-the-loop-ai-governance/5258639). While I think he get's some things wrong, he does raise some good points.
+
+The HITL gate design also connects to the Brandwine accountability argument. Logging the human's raw input ("y" or "n") alongside the cost context means the trace records not just what the human decided but what information they had when they decided it. That's a richer audit trail than a boolean approval flag, and it's the pattern I'll carry forward into the capstone's checkpoint design--it adds fuller details around usage, observability, and errors.
+
+The cost reconciliation gap — gateway log not found, falling back to STATS — is actually a meaningful observability finding in itself. It means there's a layer of the system (the gateway's view of token consumption) that I can't directly observe from my code. In a production deployment, that gap would need to be closed — either by ensuring gateway log access or by adding a gateway API call to pull usage directly.
