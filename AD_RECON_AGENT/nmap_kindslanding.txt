@@ -1,0 +1,13 @@
+Starting Nmap 7.99 ( https://nmap.org ) at 2026-07-31 23:18 -0400
+Nmap scan report for 192.168.56.10
+Host is up (0.00069s latency).
+
+PORT     STATE SERVICE       VERSION
+88/tcp   open  kerberos-sec  Microsoft Windows Kerberos (server time: 2026-08-01 03:18:43Z)
+389/tcp  open  ldap          Microsoft Windows Active Directory LDAP (Domain: sevenkingdoms.local, Site: Default-First-Site-Name)
+445/tcp  open  microsoft-ds?
+636/tcp  open  ssl/ldap      Microsoft Windows Active Directory LDAP (Domain: sevenkingdoms.local, Site: Default-First-Site-Name)
+3268/tcp open  ldap          Microsoft Windows Active Directory LDAP (Domain: sevenkingdoms.local, Site: Default-First-Site-Name)
+5985/tcp open  http          Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+Service Info: Host: KINGSLANDING; OS: Windows; CPE: cpe:/o:microsoft:windows
+Nmap done: 1 IP address (1 host up) scanned in 13.53 seconds

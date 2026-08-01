@@ -1,0 +1,9 @@
+{"ts": "2026-08-01T04:13:00.187138Z", "step": "agent_start", "run_id": "run_20260801T041300", "target": "192.168.56.10", "domain": "sevenkingdoms.local", "mode": "fixture"}
+{"ts": "2026-08-01T04:13:00.200573Z", "run_id": "run_20260801T041300", "action": "scope_intake", "operator": "colin", "detail": "target=192.168.56.10 domain=sevenkingdoms.local"}
+{"ts": "2026-08-01T04:13:00.201584Z", "run_id": "run_20260801T041300", "action": "nmap_complete", "operator": "colin", "detail": "open_ports=[88, 389, 445, 636, 3268, 5985] chars=887"}
+{"ts": "2026-08-01T04:13:07.456128Z", "run_id": "run_20260801T041300", "action": "hitl_checkpoint_1", "operator": "colin", "detail": "decision=approved"}
+{"ts": "2026-08-01T04:13:48.988320Z", "run_id": "run_20260801T041300", "action": "llm_analysis_complete", "operator": "colin", "detail": "is_dc=True findings=10"}
+{"ts": "2026-08-01T04:13:56.879860Z", "run_id": "run_20260801T041300", "action": "hitl_checkpoint_2", "operator": "colin", "detail": "decision=approved findings=10"}
+{"ts": "2026-08-01T04:13:56.881006Z", "run_id": "run_20260801T041300", "action": "report_generated", "operator": "colin", "detail": "path=/workspaces/collective-assignment-ballin-062/AD_RECON_AGENT/reports/report_20260801T041356.md chars=7409"}
+{"ts": "2026-08-01T04:14:06.576073Z", "run_id": "run_20260801T041300", "action": "hitl_checkpoint_3", "operator": "colin", "detail": "decision=approved"}
+{"ts": "2026-08-01T04:14:06.577679Z", "step": "agent_complete", "run_id": "run_20260801T041300", "findings": 10, "approved": true}
