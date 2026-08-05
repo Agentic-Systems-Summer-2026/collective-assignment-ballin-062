@@ -239,6 +239,12 @@ pick_or() {
 # ---- apply ----------------------------------------------------------------
 apply_models() { # apply_models <primary-ref> [fallback-refs...]
   local primary="$1"; shift
+  # Re-render the config first. The gateway only resolves model refs that are
+  # declared in openclaw.json, and configure.sh declares the full OU catalog
+  # (falling back to the static defaults when the gateway is unreachable).
+  # Idempotent: keys and the gateway token are preserved across renders.
+  bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/configure.sh" >/dev/null 2>&1 \
+    || echo "⚠️  Config re-render failed — continuing with the previously declared model list." >&2
   echo
   echo "→ primary: ${primary}"
   if ! openclaw models set "${primary}"; then

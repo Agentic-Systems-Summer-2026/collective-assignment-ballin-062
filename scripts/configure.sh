@@ -126,21 +126,46 @@ fi
 MODEL_BLOCK="${MODEL_BLOCK} }"
 
 # Declare every LiteLLM model the config can reference. The gateway resolves
-# agents.defaults.model against this list, so a fallback that is not declared
-# here simply will not work. Declared regardless of the active provider, so
-# scripts/select-model.sh can switch to any of them without a re-render.
+# agents.defaults.model against this list, so a model that is not declared
+# here simply will not work. When a real OU key is present, fetch the live
+# catalog from the gateway and declare ALL of it, so scripts/select-model.sh
+# can switch to any catalog model without a re-render. If the fetch fails
+# (no network, expired key), fall back to the static default + fallback list
+# so the render still succeeds and the course default keeps working.
 LITELLM_DECLARED="${LITELLM_MODEL}"
 if [[ -n "${LITELLM_MODEL_FALLBACKS}" ]]; then
   IFS=',' read -ra _decl <<< "${LITELLM_MODEL_FALLBACKS}"
   for f in "${_decl[@]}"; do
     f="${f#"${f%%[![:space:]]*}"}"; f="${f%"${f##*[![:space:]]}"}"
     [[ -z "${f}" || "${f}" == "${LITELLM_MODEL}" ]] && continue
-    LITELLM_DECLARED="${LITELLM_DECLARED},${f}"
+    LITELLM_DECLARED="${LITELLM_DECLARED}"$'\n'"${f}"
   done
 fi
+if [[ "${LL_KEY}" != "${LL_PLACEHOLDER}" ]]; then
+  _cat_json="$(mktemp)"
+  _http="$(curl -s -m 15 -o "${_cat_json}" -w '%{http_code}' \
+           -H "Authorization: Bearer ${LL_KEY}" \
+           "${LITELLM_BASE_URL%/}/v1/models" || echo 000)"
+  if [[ "${_http}" == "200" ]]; then
+    _catalog="$(python3 -c 'import json,sys
+ids = sorted({m["id"] for m in json.load(open(sys.argv[1])).get("data", []) if m.get("id")})
+print("\n".join(ids))' "${_cat_json}" 2>/dev/null || true)"
+    if [[ -n "${_catalog}" ]]; then
+      while IFS= read -r _mid; do
+        [[ -z "${_mid}" ]] && continue
+        grep -Fxq "${_mid}" <<< "${LITELLM_DECLARED}" || LITELLM_DECLARED="${LITELLM_DECLARED}"$'\n'"${_mid}"
+      done <<< "${_catalog}"
+      echo "  declared $(wc -l <<< "${LITELLM_DECLARED}") OU models from the live catalog"
+    else
+      echo "  (could not parse the OU catalog — declaring only the static default models)"
+    fi
+  else
+    echo "  (OU catalog fetch returned HTTP ${_http} — declaring only the static default models)"
+  fi
+  rm -f "${_cat_json}"
+fi
 LITELLM_MODELS_JSON=""
-IFS=',' read -ra _mids <<< "${LITELLM_DECLARED}"
-for mid in "${_mids[@]}"; do
+while IFS= read -r mid; do
   [[ -z "${mid}" ]] && continue
   if [[ "${mid}" == "${LITELLM_MODEL}" ]]; then mname="${LITELLM_MODEL_NAME}"; else mname="${mid} (OU LiteLLM)"; fi
   LITELLM_MODELS_JSON="${LITELLM_MODELS_JSON}          {
@@ -153,7 +178,7 @@ for mid in "${_mids[@]}"; do
             maxTokens: ${LITELLM_MAX_TOKENS:-8192},
           },
 "
-done
+done <<< "${LITELLM_DECLARED}"
 
 # Render the config from the template. The models array is multi-line, so it
 # goes in via a file read rather than a sed replacement string.

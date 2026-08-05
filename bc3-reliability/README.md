@@ -20,13 +20,24 @@ the categories; find them in the code).
 3. **Demonstrate recovery twice:** (a) kill/stop the Codespace mid-run and
    show it resumes correctly; (b) inject one failure (e.g., point BASE at a
    bad URL for a few items, or corrupt a model reply) and show the harness
-   handles it and the report stays valid.
+   handles it and the report stays valid. A helper is provided for the failure
+   injection: `python3 bc3-reliability/hang-server.py` stands up a local
+   endpoint that hangs, resets, stalls, or returns junk on demand (run it
+   with `--help` for the modes). `nc` is also on the toolbelt if you prefer a
+   one-liner.
 
 **Acceptance check.** Both recovery demos captured in the write-up — an
 **asciinema recording is the preferred evidence** (`asciinema rec
 bc3-recovery.cast`, commit the .cast file; trace excerpts or screenshots
 also accepted) — report never left corrupt/half-written, and re-running
 after success is idempotent.
+
+> **Recording tip.** If you drive the kill/restart from a shell script,
+> do **not** use `set -e` in that script: when you kill the background
+> agent the shell exits on that line and your asciinema capture stops
+> right before the resume, which is the most important half of the demo.
+> Record with `set +e` (or no `set -e`) around the kill so the recovery
+> is captured.
 
 **Rubric (50 pts).** Diagnosis completeness (15) · fixes: retries/timeouts/
 validation/fallback (15) · checkpoint + rollback with demonstrated recovery
