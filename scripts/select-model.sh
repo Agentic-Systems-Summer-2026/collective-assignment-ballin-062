@@ -151,22 +151,35 @@ PY
 }
 # ---- provider question ----------------------------------------------------
 # choose_provider <ROLE> <allow_none 0|1> -> prints "ou" | "or" | "none"
+# Always asks. Both gateways are listed even when only one key is present, so
+# the choice between them stays visible to every student. Picking a provider
+# without a key prints how to set one, then re-asks.
 choose_provider() {
   local role="$1" allow_none="$2"
-  local opts=() vals=() i ans=""
-  if (( HAVE_LL )); then opts+=("OU AI Sandbox (LiteLLM) — course endpoint, no per-token cost"); vals+=("ou"); fi
-  if (( HAVE_OR )); then opts+=("OpenRouter — your own key and your own credit");             vals+=("or"); fi
-  if (( allow_none )); then opts+=("No ${role,,} model");                                      vals+=("none"); fi
-  # Only one real choice and nothing to decline: take it silently.
-  if (( ${#vals[@]} == 1 )); then printf '%s' "${vals[0]}"; return 0; fi
+  local opts=() vals=() keyed=() i tag ans=""
+  opts+=("OU AI Sandbox (LiteLLM) — course endpoint, no per-token cost"); vals+=("ou");   keyed+=("${HAVE_LL}")
+  opts+=("OpenRouter — your own key and your own credit");                vals+=("or");   keyed+=("${HAVE_OR}")
+  if (( allow_none )); then opts+=("No ${role,,} model");                 vals+=("none"); keyed+=(1); fi
   echo >&2
   echo "Where should your ${role} model come from?" >&2
-  for i in "${!opts[@]}"; do printf "  %d) %s\n" "$((i+1))" "${opts[$i]}" >&2; done
+  for i in "${!opts[@]}"; do
+    tag=""
+    (( keyed[i] )) || tag="   [no key set yet]"
+    printf "  %d) %s%s\n" "$((i+1))" "${opts[$i]}" "${tag}" >&2
+  done
   echo >&2
   while :; do
     read -rp "Choice: " ans </dev/tty || { echo "No input — aborting." >&2; exit 1; }
     ans="${ans// /}"
     if [[ "${ans}" =~ ^[0-9]+$ ]] && (( ans >= 1 && ans <= ${#vals[@]} )); then
+      if (( ! keyed[ans-1] )); then
+        case "${vals[$((ans-1))]}" in
+          ou) echo "That needs an OU AI Sandbox key (LITELLM_API_KEY), issued by the course." >&2 ;;
+          or) echo "That needs your own OpenRouter key (OPENROUTER_API_KEY) — https://openrouter.ai (Settings → Keys)." >&2 ;;
+        esac
+        echo "Set it with: bash scripts/set-key.sh — then rerun this script. Or pick another option." >&2
+        continue
+      fi
       printf '%s' "${vals[$((ans-1))]}"; return 0
     fi
     echo "Please enter a number between 1 and ${#vals[@]}." >&2
